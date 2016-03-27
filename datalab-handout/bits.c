@@ -209,7 +209,11 @@ int tmin(void) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  return ((n >> 4) & 1) | ((((1 << n) - 1 + (~x + 1)) >> 31) & 1);
+	unsigned int cneg = ~x + 1;
+	unsigned int left = cneg >> (n + ~1 + 1);
+	int fneg = (x >> 31) & ((!left) | (!(left^1) & !(cneg ^ (1 << (n + ~1 + 1)))));
+	int fpos = (~(x >> 31)) & (!(x >> (n + ~1 + 1)));
+	return (fneg | fpos) & 1;
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
