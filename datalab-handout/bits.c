@@ -244,7 +244,9 @@ int negate(int x) {
  *   Rating: 3
  */
 int isPositive(int x) {
-  return !(x & ( 1 << 31));
+	unsigned int ux = x;
+	int zero = !(x ^ 0);
+	return !zero & !(ux >> 31);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
