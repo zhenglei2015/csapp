@@ -173,7 +173,18 @@ int logicalShift(int x, int n) {
  *   Rating: 4
  */
 int bitCount(int x) {
-  return 2;
+	int mask1 = 0x55 | (0x55 << 8) | (0x55 << 16) | (0x55 << 24); // 0x55555555
+	int mask11 = 0x33 | (0x33 << 8) | (0x33 << 16) | (0x33 << 24); // 0x33333333
+	int mask2 = 0x0f | (0x0f << 8) | (0x0f << 16) | (0x0f << 24);// 0x0f0f0f0f
+	int mask3 = 0xff | (0xff << 16); // 0x00ff00ff
+	int mask4 = 0xff | (0xff << 8); // 0x0000ffff
+	unsigned int ux = x;
+	ux = (ux & mask1) + ((ux >> 1) & mask1);
+	ux = (ux & mask11) + ((ux >> 2) & mask11);
+	ux = (ux & mask2) + ((ux >> 4) & mask2);
+	ux = (ux & mask3) + ((ux >> 8) & mask3);
+	ux = (ux & mask4) + ((ux >> 16) & mask4);
+  return ux;
 }
 /* 
  * bang - Compute !x without using !
@@ -285,7 +296,7 @@ int ilog2(int x) {
  *   Rating: 2
  */
 unsigned float_neg(unsigned uf) {
- return 2;
+ return  1;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
