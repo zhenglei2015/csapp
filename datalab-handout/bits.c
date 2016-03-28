@@ -330,11 +330,16 @@ unsigned float_twice(unsigned uf) {
   unsigned exp = (uf >> 23) & 0xff;
   if(exp == 0xff && frac)
  	 return uf;
-  if(exp) {
-	 exp = exp + 1;	  
-	 uf = (uf & (1 << 31)) | (uf & (0x00 << 23)) | exp;
+  int flag = uf & (1 << 31);
+  if(exp != 0) {
+	 if(exp == 0xff || exp + 1 == 0xff) {
+		uf = flag | (0xff << 23) | 0x800000;
+	 } else {
+		int newExp = exp + 1;
+  	 	uf = (uf & (~(0xff << 23))) | (newExp << 23);
+	 }
   } else {
-	 uf = (uf & (1 << 31)) | (uf & 0x800000) | (frac << 1);
+	 uf = flag | ( frac << 1 );
   }
   return uf;
 }
