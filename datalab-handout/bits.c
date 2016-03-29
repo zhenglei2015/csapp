@@ -312,7 +312,54 @@ unsigned float_neg(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_i2f(int x) {
-  return 2;
+  unsigned int ux;
+  int flag = (x >> 31) & 1;
+  if(flag) 
+    ux = ~x + 1;
+  else
+		ux = x;
+	
+	if(x == 0) {
+		return 0;
+	}
+	int cnt = 0;
+	unsigned nx = ux;
+	while(nx != 0) {
+		nx = nx >> 1;
+		cnt++;
+	}
+	int bias = (1 << 7) - 1;
+	int exp = cnt - 1 + bias;
+  if(cnt <= 24) {
+		return (flag << 31) | (exp << 23) | ((ux << (24 - cnt)) & 0x7fffff);	
+	} else {
+		int num1 = cnt - 24; // 1 count in the head
+		int left = (0xff >> (8 - num1)) & ux; // 1 should be omit or becaome carry
+		int middle = 1 << ((cnt - 24) - 1); // used to round to even
+		int frac = (ux >> (num1)) & 0x7fffff; // frac section
+		if(left == middle) {
+			if(frac & 1) {
+				if(frac == 0x7fffff) {
+					frac = 0;
+					exp += 1;
+				} else {
+					frac += 1;	
+				}
+			} else {
+				frac = frac;	
+			}
+		} else if(left > middle) {
+			if(frac == 0x7fffff) {
+				frac = 0;
+				exp += 1;
+			}	else {
+				frac += 1;
+			}
+		} else {
+			frac = frac;
+		}
+		return (flag << 31) | (exp << 23) | frac;
+	}
 }
 /* 
  * float_twice - Return bit-level equivalent of expression 2*f for
