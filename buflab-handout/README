@@ -1,0 +1,9 @@
+level 0 buf 的地址是 esp-0x28 这个是十六进制所以是 40 然后再覆盖栈上的 ebp 再来 4 个就是 smoke 的地址了
+level 1 在 level 0 的基础上 加上传参 参数的位置在返回地址上面
+level 2 这个实验要记住 ret 是会使得 esp - 4 的，前两题中的返回地址可以填 buf 的地址 在buf中赋值完毕之后再来一次 ret 
+level 3 这个不能破坏栈 在 level2 的基础上修改一下 不要破坏栈上的 ebp 返回地址值破坏一个 在注入的代码中赋值完毕再 push 进去原来的返回地址 这样同时修复了 esp 和 返回地址
+
+	b8 a2 86 7d 6e /* move cookie %eax */
+	68 be 8d 04 08 /* push 正常返回地址*/ 
+	ret
+
