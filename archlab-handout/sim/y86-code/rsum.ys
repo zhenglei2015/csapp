@@ -1,0 +1,53 @@
+.pos 0
+init:
+	irmovl Stack, %esp
+	irmovl Stack, %ebp
+	call Main
+	halt
+
+	.align 4
+ele1:
+	.long 0x1
+	.long ele2
+ele2:
+	.long 0x2
+	.long ele3
+ele3:
+	.long 0x3
+	.long 0
+
+Main: 
+	pushl %ebp
+	rrmovl %esp, %ebp
+	irmovl ele1, %esi
+	pushl %esi
+	call RSumList
+	rrmovl %ebp, %esp
+	popl %ebp
+	ret
+
+RSumList:
+	pushl %ebp
+	rrmovl %esp, %ebp
+	mrmovl 8(%ebp), %ecx
+	rrmovl %ecx, %edx
+	irmovl $0, %eax
+	andl %edx, %edx
+	je Done
+Else:
+	pushl %ecx
+	mrmovl 4(%ecx), %ecx
+	pushl %ecx
+	call RSumList
+	popl %ecx
+	popl %ecx
+	mrmovl (%ecx), %edx
+	addl %edx, %eax
+Done:
+	rrmovl %ebp, %esp
+	popl %ebp
+	ret
+
+	.pos 0x200
+Stack:
+
