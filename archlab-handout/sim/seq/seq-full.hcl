@@ -125,14 +125,16 @@ bool need_valC =
 ## What register should be used as the A sourc
 int srcA = [
 	icode in { IRRMOVL, IRMMOVL, IOPL, IPUSHL} : rA;
-	icode in { IPOPL, IRET, ILEAVE, ILEAVE} : RESP;
+	icode in { IPOPL, IRET} : RESP;
+	icode in { ILEAVE} : REBP;
 	1 : RNONE; # Don't need register
 ];
 
 ## What register should be used as the B source?
 int srcB = [
 	icode in { IOPL, IRMMOVL, IMRMOVL, IIADDL} : rB;
-	icode in { IPUSHL, IPOPL, ICALL, IRET, ILEAVE} : RESP;
+	icode in { IPUSHL, IPOPL, ICALL, IRET} : RESP;
+	icode in { ILEAVE } : REBP;
 	1 : RNONE;  # Don't need register
 ];
 
@@ -147,7 +149,7 @@ int dstE = [
 ## What register should be used as the M destination?
 int dstM = [
 	icode in { IMRMOVL, IPOPL} : rA;
-	icode in {ILEAVE} : RESP;
+	icode in {ILEAVE} : REBP;
 	1 : RNONE;  # Don't write any register
 ];
 
@@ -157,8 +159,8 @@ int dstM = [
 int aluA = [
 	icode in { IRRMOVL, IOPL } : valA;
 	icode in { IIRMOVL, IRMMOVL, IMRMOVL, IIADDL } : valC;
-	icode in { ICALL, IPUSHL, ILEAVE} : -4;
-	icode in { IRET, IPOPL } : 4;
+	icode in { ICALL, IPUSHL} : -4;
+	icode in { IRET, IPOPL, ILEAVE} : 4;
 	# Other instructions don't need ALU
 ];
 
@@ -166,7 +168,7 @@ int aluA = [
 int aluB = [
 	icode in { IRMMOVL, IMRMOVL, IOPL, ICALL, 
 		      IPUSHL, IRET, IPOPL, IIADDL} : valB;
-	icode in {ILEAVE} : REBP;
+	icode in {ILEAVE} : valA;
 	icode in { IRRMOVL, IIRMOVL } : 0;
 	# Other instructions don't need ALU
 ];
@@ -190,7 +192,8 @@ bool mem_write = icode in { IRMMOVL, IPUSHL, ICALL };
 
 ## Select memory address
 int mem_addr = [
-	icode in { IRMMOVL, IPUSHL, ICALL, IMRMOVL, ILEAVE} : valE;
+	icode in { IRMMOVL, IPUSHL, ICALL, IMRMOVL} : valE;
+	icode in {ILEAVE} : valB;
 	icode in { IPOPL, IRET } : valA;
 	# Other instructions don't need address
 ];
