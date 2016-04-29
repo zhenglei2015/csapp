@@ -152,6 +152,11 @@ int main(int argc, char **argv)
     exit(0); /* control never reaches here */
 }
 
+void child_stop(int sig) {
+	pause();
+}
+void child_continue(int sig){
+}
 /* 
  * eval - Evaluate the command line that the user has just typed in
  * 
@@ -165,6 +170,36 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+	char *argv[MAXARGS];	
+	char buf[MAXLINE];
+	int bg;
+	pid_t pid;
+	strcpy(buf, cmdline);
+	bg = parseline(buf, argv);
+	if(argv[0] == NULL) 
+		return;
+	if(!builtin_cmd(argv)) {
+		if((pid = fork()) == 0) {
+			Signal(SIGTSTP, child_stop);
+			Signal(SIGUSR1, child_continue);
+			if(execve(argv[0], argv, environ) < 0) {
+				printf("%s command not found.\n", argv[0]);
+				exit(0);
+			}	
+		} else {
+			if(bg)
+				addjob(jobs, pid, BG, cmdline);
+			else{
+				addjob(jobs, pid, FG, cmdline);
+				pause();
+			}
+		}
+	} else {
+		if(!strcmp(argv[0], "jobs")) {
+			listjobs(jobs);
+		} else 
+			do_bgfg(argv);	
+	}
     return;
 }
 
@@ -231,6 +266,11 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+	if(!strcmp(argv[0], "quit"))
+		exit(0);
+	if(!strcmp(argv[0], "fg") || !strcmp(argv[0], "bg") || !strcmp(argv[0], "jobs")) {
+		return 1;
+	}	
     return 0;     /* not a builtin command */
 }
 
@@ -239,6 +279,20 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+	if(!strcmp(argv[0], "fg")) {
+		int jobid = atoi(argv[1]);	
+		struct job_t *bgjob = getjobjid(jobs, jobid);			
+		bgjob->state = FG;
+		pid_t pid = bgjob->pid;
+		waitfg(pid);
+	} else if(!strcmp(argv[0], "bg")) {
+		int jobid = atoi(argv[1]);
+		struct job_t *bgjob = getjobjid(jobs, jobid);
+		pid_t pid = bgjob->pid;
+		if(bgjob->state == ST)
+			kill(bgjob->jid, SIGUSR1);
+		bgjob->state = BG;
+	}
     return;
 }
 
@@ -247,6 +301,8 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+	while(fgpid() == pid)
+		pause();
     return;
 }
 
@@ -263,6 +319,9 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+	pid_t pid;
+	waitpid(pid, NULL, 0);
+	deletejob(jobs, pid);
     return;
 }
 
@@ -273,6 +332,8 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+	pid_t fp = fgpid(jobs);	
+	kill(fp, SIGINT);
     return;
 }
 
@@ -283,6 +344,8 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+	pid_t fp = fgpid(jobs);	
+	kill(fp, SIGTSTP);    
     return;
 }
 
