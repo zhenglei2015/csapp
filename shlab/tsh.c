@@ -135,10 +135,9 @@ int main(int argc, char **argv)
 	    printf("%s", prompt);
 	    fflush(stdout);
 	}
-	puts("aaaa");
+	fflush(stdout);
 	if ((fgets(cmdline, MAXLINE, stdin) == NULL) && ferror(stdin))
 	    app_error("fgets error");
-	puts("bbbb");
 	if (feof(stdin)) { /* End of file (ctrl-d) */
 	    fflush(stdout);
 	    exit(0);
@@ -301,9 +300,7 @@ void do_bgfg(char **argv)
 void waitfg(pid_t pid)
 {
 	while(fgpid(jobs) == pid) {
-		printf("before pause %d\n",pid);
 		pause();
-		printf("after pause %d\n",pid);
 	}
     return;
 }
@@ -323,7 +320,6 @@ void sigchld_handler(int sig)
 {
 	pid_t pid;
 	while((pid = waitpid(-1, NULL, 0)) > 0) {
-		printf("zzz %d\n", pid);
 		deletejob(jobs, pid);
 	}
     return;
@@ -351,7 +347,6 @@ void sigtstp_handler(int sig)
 {
 	pid_t fp = fgpid(jobs);	
 	struct job_t *jp = getjobpid(jobs, fp);
-	printf("fg pid %d\n", jp->pid);
 	jp->state = ST;
 	kill(fp, SIGTSTP);    
     return;
