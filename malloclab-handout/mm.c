@@ -86,6 +86,7 @@ int mm_init(void)
  */
 void *mm_malloc(size_t size)
 {
+	int a = 1;
     int newsize = ALIGN(size + SIZE_T_SIZE);
     void *p = mem_sbrk(newsize);
     if (p == (void *)-1)
