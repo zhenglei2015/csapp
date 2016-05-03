@@ -51,7 +51,6 @@ struct job_t {              /* The job struct */
 struct job_t jobs[MAXJOBS]; /* The job list */
 /* End global variables */
 
-
 /* Function prototypes */
 
 /* Here are the functions that you will implement */
@@ -136,8 +135,10 @@ int main(int argc, char **argv)
 	    printf("%s", prompt);
 	    fflush(stdout);
 	}
+	puts("aaaa");
 	if ((fgets(cmdline, MAXLINE, stdin) == NULL) && ferror(stdin))
 	    app_error("fgets error");
+	puts("bbbb");
 	if (feof(stdin)) { /* End of file (ctrl-d) */
 	    fflush(stdout);
 	    exit(0);
@@ -148,7 +149,6 @@ int main(int argc, char **argv)
 	fflush(stdout);
 	fflush(stdout);
     } 
-
     exit(0); /* control never reaches here */
 }
 
@@ -156,6 +156,7 @@ void child_stop(int sig) {
 	pause();
 }
 void child_continue(int sig){
+	printf("bg command\n");
 }
 /* 
  * eval - Evaluate the command line that the user has just typed in
@@ -191,7 +192,7 @@ void eval(char *cmdline)
 				addjob(jobs, pid, BG, cmdline);
 			else{
 				addjob(jobs, pid, FG, cmdline);
-				pause();
+				waitfg(pid);
 			}
 		}
 	} else {
@@ -283,12 +284,10 @@ void do_bgfg(char **argv)
 		int jobid = atoi(argv[1]);	
 		struct job_t *bgjob = getjobjid(jobs, jobid);			
 		bgjob->state = FG;
-		pid_t pid = bgjob->pid;
-		waitfg(pid);
+		waitfg(bgjob->pid);
 	} else if(!strcmp(argv[0], "bg")) {
 		int jobid = atoi(argv[1]);
 		struct job_t *bgjob = getjobjid(jobs, jobid);
-		pid_t pid = bgjob->pid;
 		if(bgjob->state == ST)
 			kill(bgjob->jid, SIGUSR1);
 		bgjob->state = BG;
@@ -301,8 +300,11 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-	while(fgpid() == pid)
+	while(fgpid(jobs) == pid) {
+		printf("before pause %d\n",pid);
 		pause();
+		printf("after pause %d\n",pid);
+	}
     return;
 }
 
@@ -320,8 +322,10 @@ void waitfg(pid_t pid)
 void sigchld_handler(int sig) 
 {
 	pid_t pid;
-	waitpid(pid, NULL, 0);
-	deletejob(jobs, pid);
+	while((pid = waitpid(-1, NULL, 0)) > 0) {
+		printf("zzz %d\n", pid);
+		deletejob(jobs, pid);
+	}
     return;
 }
 
@@ -332,8 +336,9 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
-	pid_t fp = fgpid(jobs);	
-	kill(fp, SIGINT);
+	pid_t pid = fgpid(jobs);	
+	kill(pid, SIGINT);
+	deletejob(jobs, pid);
     return;
 }
 
@@ -345,6 +350,9 @@ void sigint_handler(int sig)
 void sigtstp_handler(int sig) 
 {
 	pid_t fp = fgpid(jobs);	
+	struct job_t *jp = getjobpid(jobs, fp);
+	printf("fg pid %d\n", jp->pid);
+	jp->state = ST;
 	kill(fp, SIGTSTP);    
     return;
 }
